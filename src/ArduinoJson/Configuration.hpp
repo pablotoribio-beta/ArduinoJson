@@ -7,6 +7,15 @@
 
 #pragma once
 
+// small or big machine
+#ifndef ARDUINOJSON_EMBEDDED_MODE
+#if defined(ARDUINO) || defined(__IAR_SYSTEMS_ICC__)
+#define ARDUINOJSON_EMBEDDED_MODE 1
+#else
+#define ARDUINOJSON_EMBEDDED_MODE 0
+#endif
+#endif
+
 // enable deprecated functions by default
 #ifndef ARDUINOJSON_ENABLE_DEPRECATED
 #define ARDUINOJSON_ENABLE_DEPRECATED 1
@@ -23,7 +32,28 @@
 #define ARDUINOJSON_NEGATIVE_EXPONENTIATION_THRESHOLD 1e-5
 #endif
 
-#ifdef ARDUINO  // assume this is an embedded platform
+#ifdef ARDUINO
+
+// Arduino has its own implementation of String to replace std::string
+#ifndef ARDUINOJSON_ENABLE_ARDUINO_STRING
+#define ARDUINOJSON_ENABLE_ARDUINO_STRING 1
+#endif
+
+#ifndef ARDUINOJSON_ENABLE_ARDUINO_STREAM
+#define ARDUINOJSON_ENABLE_ARDUINO_STREAM 1
+#endif
+
+#endif
+
+#ifndef ARDUINOJSON_ENABLE_PROGMEM
+#ifdef PROGMEM
+#define ARDUINOJSON_ENABLE_PROGMEM 1
+#else
+#define ARDUINOJSON_ENABLE_PROGMEM 0
+#endif
+#endif
+
+#if ARDUINOJSON_EMBEDDED_MODE
 
 // store using float instead of double to reduce the memory usage (issue #134)
 #ifndef ARDUINOJSON_USE_DOUBLE
@@ -36,24 +66,6 @@
 #endif
 #ifndef ARDUINOJSON_USE_INT64
 #define ARDUINOJSON_USE_INT64 0
-#endif
-
-// Arduino has its own implementation of String to replace std::string
-#ifndef ARDUINOJSON_ENABLE_ARDUINO_STRING
-#define ARDUINOJSON_ENABLE_ARDUINO_STRING 1
-#endif
-
-#ifndef ARDUINOJSON_ENABLE_ARDUINO_STREAM
-#define ARDUINOJSON_ENABLE_ARDUINO_STREAM 1
-#endif
-
-// On AVR archiecture, we can use PROGMEM
-#ifndef ARDUINOJSON_ENABLE_PROGMEM
-#ifdef PROGMEM
-#define ARDUINOJSON_ENABLE_PROGMEM 1
-#else
-#define ARDUINOJSON_ENABLE_PROGMEM 0
-#endif
 #endif
 
 // Arduino doesn't have std::string
@@ -81,7 +93,7 @@
 #define ARDUINOJSON_DEFAULT_NESTING_LIMIT 10
 #endif
 
-#else  // assume this is a computer
+#else  // ie ARDUINOJSON_EMBEDDED_MODE == 0
 
 // on a computer we have plenty of memory so we can use doubles
 #ifndef ARDUINOJSON_USE_DOUBLE
@@ -141,6 +153,16 @@
 #define ARDUINOJSON_DEFAULT_NESTING_LIMIT 50
 #endif
 
+#endif
+
+// how many bits in a double
+#ifndef ARDUINOJSON_DOUBLE_IS_64BITS
+#if /*GCC*/ (defined(__SIZEOF_DOUBLE__) && __SIZEOF_DOUBLE__ < 8) || \
+    /*IAR*/ (defined(__DOUBLE__) && __DOUBLE__ < 64)
+#define ARDUINOJSON_DOUBLE_IS_64BITS 0
+#else
+#define ARDUINOJSON_DOUBLE_IS_64BITS 1  // by default support 64-bit
+#endif
 #endif
 
 #if ARDUINOJSON_USE_LONG_LONG && ARDUINOJSON_USE_INT64
